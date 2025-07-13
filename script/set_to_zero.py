@@ -1,26 +1,33 @@
 import board
 import busio
 from adafruit_pca9685 import PCA9685
-# from Adafruit_PCA9685 import PCA9685
-
-
 import time
+from dog4 import *
+from trajectory_planning import *
 
 # Initialize I2C bus using the Pi's default SCL and SDA pins
 i2c = busio.I2C(3, 2)
-ms_to_sig = int(1024 / 300)
-
-
-def to_pulse(t, freq):
-	period_us = 1_000_000 / freq
-	duty_12bit = (t / period_us) * 4096  # Calculate 12-bit value
-	return int(duty_12bit) << 4  # Scale to 16-bit by shifting left 4 bits
-
 
 # Create the PCA9685 instance
 pca = PCA9685(i2c)
 # pca = PCA9685()
 pca.frequency = 50  # Set frequency to 50Hz for servo control
-for i in range(16):
-	pca.channels[i].duty_cycle = to_pulse(1500, 50)
+
+leg1 = Leg(pca.channels[13], pca.channels[14], pca.channels[15])
+leg2 = Leg(pca.channels[10], pca.channels[11], pca.channels[12])
+leg3 = Leg(pca.channels[7], pca.channels[8], pca.channels[9])
+leg4 = Leg(pca.channels[4], pca.channels[5], pca.channels[6])
+legs = []
+
+for i in range(4,14,3):
+	print(i, i+1, i+2)
+	legs.append(Leg(pca.channels[i], pca.channels[i+1], pca.channels[i+2]))
+
+
+while True:
+	for leg in legs:
+		leg.base_angle = 0
+		leg.hip_angle = 0
+		leg.knee_angle = 0
+		leg.set_angles()
 

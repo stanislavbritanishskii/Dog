@@ -4,14 +4,16 @@ def interpolate_3d(start, end, step):
 	dx = end[0] - start[0]
 	dy = end[1] - start[1]
 	dz = end[2] - start[2]
+	di = end[3] - start[3]
 
-	distance = math.sqrt(dx*dx + dy*dy + dz*dz)
+	distance = math.sqrt(dx*dx + dy*dy + dz*dz + di*di)
 	if distance == 0.0 or step <= 0.0:
 		return [list(start)]
 
 	ux = dx / distance
 	uy = dy / distance
 	uz = dz / distance
+	ui = di / distance
 
 	points = []
 	current_step = 0.0
@@ -20,10 +22,11 @@ def interpolate_3d(start, end, step):
 		x = start[0] + ux * current_step
 		y = start[1] + uy * current_step
 		z = start[2] + uz * current_step
+
 		points.append([x, y, z])
 		current_step += step
 
-	points.append(list(end))
+	points.append(list(end[:3]))
 	return points
 
 

@@ -58,23 +58,23 @@ class Leg:
 		self.knee_channel = knee_channel
 
 		# Segment lengths (in mm or your unit)
-		self.upper_len = 42  # Fixed length from base joint to hip joint
-		self.thigh_len = 81  # Thigh length
-		self.shank_len = 66  # Shank length
+		self.upper_len = 38  # Fixed length from base joint to hip joint
+		self.thigh_len = 44  # Thigh length
+		self.shank_len = 50  # Shank length
 
 		# Pre-calculate squared lengths if needed
 		self.thigh_len_squared = self.thigh_len ** 2
 		self.shank_len_squared = self.shank_len ** 2
 
 		# Joint angle limits (in degrees)
-		self.base_min_angle = -45
-		self.base_max_angle = 45
+		self.base_min_angle = -90
+		self.base_max_angle = 90
 
-		self.hip_min_angle = -45
-		self.hip_max_angle = 45
+		self.hip_min_angle = -90
+		self.hip_max_angle = 90
 
 		self.knee_min_angle = -90
-		self.knee_max_angle = 0
+		self.knee_max_angle = 90
 
 		# Current joint angles (in degrees)
 		self.base_angle = 0
@@ -91,16 +91,22 @@ class Leg:
 		upper_coord = Coordinate(0,0,0)
 		upper_coord.x = self.upper_len * math.sin(base_angle)
 		upper_coord.z = -self.upper_len * math.cos(base_angle)
-		print(upper_coord)
-		print("distance to desired", (upper_coord - c).length())
+		# print(upper_coord)
+		# print("distance to desired", (upper_coord - c).length())
 		left_distance = (upper_coord - c).length()
 		knee_angle = math.pi - math.acos((self.thigh_len **2 + self.shank_len **2 - left_distance ** 2) / (2 * self.thigh_len * self.shank_len))
 
 		top_vector = [upper_coord.x, upper_coord.y, upper_coord.z]
 		bottom_vector = [upper_coord.x - x, upper_coord.y - y, upper_coord.z - z]
 		inter_angle = math.copysign(math.pi - angle_between_vectors(top_vector, bottom_vector), y)
-		print("knee angle: ", math.degrees(knee_angle))
-		print("inter_angle;", math.degrees(inter_angle))
+		# print("inter_angle;", math.degrees(inter_angle))
+		hip_angle = math.acos((self.thigh_len **2 - self.shank_len **2 + left_distance ** 2) / (2 * self.thigh_len * left_distance)) + inter_angle
+		# print("hip angle: ",math.degrees(hip_angle))
+		# print("knee angle: ", math.degrees(knee_angle))
+
+		self.base_angle = math.degrees(base_angle)
+		self.hip_angle = math.degrees(hip_angle)
+		self.knee_angle = -math.degrees(knee_angle)
 
 	def set_angles(self):
 		# Update the servo channels based on computed duty cycles.
@@ -114,6 +120,9 @@ class Leg:
 
 if __name__ == "__main__":
 	leg = Leg(1, 2, 3)
-	leg.go_to_position(0, -10, -100)
-	print(leg.base_angle, leg.knee_angle, leg.hip_angle)
+
+	leg.hip_angle = 0
+	leg.knee_angle = 0
+	leg.knee_min_angle = 0
+	leg.set_angles()
 
