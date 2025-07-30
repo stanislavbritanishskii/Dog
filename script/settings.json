@@ -1,0 +1,54 @@
+{
+  "default": {
+    "base_min_angle": -90,
+    "base_max_angle": 90,
+    "hip_min_angle": -90,
+    "hip_max_angle": 90,
+    "knee_min_angle": -90,
+    "knee_max_angle": 90
+  },
+  "front_left": {
+    "base": 1,
+    "hip": 1,
+    "knee": 1,
+    "base_offset": 0,
+    "hip_offset": 0,
+    "knee_offset": 0,
+    "upper_len": 46,
+    "thigh_len": 42,
+    "shank_len": 59
+  },
+  "front_right": {
+    "base": 1,
+    "hip": 1,
+    "knee": 1,
+    "base_offset": 0,
+    "hip_offset": 0,
+    "knee_offset": 0,
+    "upper_len": 46,
+    "thigh_len": 42,
+    "shank_len": 59
+  },
+  "rear_left": {
+    "base": 1,
+    "hip": 1,
+    "knee": 1,
+    "base_offset": 0,
+    "hip_offset": 0,
+    "knee_offset": 0,
+    "upper_len": 46,
+    "thigh_len": 42,
+    "shank_len": 59
+  },
+  "rear_right": {
+    "base": 1,
+    "hip": 1,
+    "knee": 1,
+    "base_offset": 0,
+    "hip_offset": 0,
+    "knee_offset": 0,
+    "upper_len": 46,
+    "thigh_len": 42,
+    "shank_len": 59
+  }
+}

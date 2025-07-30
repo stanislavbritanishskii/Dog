@@ -2,9 +2,9 @@ import board
 import busio
 from adafruit_pca9685 import PCA9685
 import time
-from dog4 import *
+from dog import *
 from trajectory_planning import *
-
+from setting_reader import *
 # Initialize I2C bus using the Pi's default SCL and SDA pins
 i2c = busio.I2C(3, 2)
 
@@ -13,9 +13,11 @@ pca = PCA9685(i2c)
 # pca = PCA9685()
 pca.frequency = 50  # Set frequency to 50Hz for servo control
 
+
+settings, default, front_left_s, front_right_s, rear_left_s, rear_right_s = read_settings("settings.json")
+
 front_right = Leg(pca.channels[13], pca.channels[14], pca.channels[15], right=True)
 front_left = Leg(pca.channels[10], pca.channels[11], pca.channels[12], right=False)
-
 
 # x, y, z - are the main coordinates. x -> left/right,
 # y -> front/back

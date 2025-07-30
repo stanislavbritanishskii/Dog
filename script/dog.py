@@ -52,32 +52,32 @@ def angle_to_pulse(angle, min_angle, max_angle):
 
 
 class Leg:
-	def __init__(self, base_channel, hip_channel, knee_channel, right=False):
+	def __init__(self, base_channel, hip_channel, knee_channel, default_settings:dict, private_settings:dict):
 		self.base_channel = base_channel
 		self.hip_channel = hip_channel
 		self.knee_channel = knee_channel
-		self.right = right
+		self.default_settings = default_settings
+		self.private_settings = private_settings
 
 		# Segment lengths (in mm or your unit)
-		self.upper_len = 38  # Fixed length from base joint to hip joint
-		self.thigh_len = 44  # Thigh length
-		self.shank_len = 50  # Shank length
+		self.upper_len = private_settings.get("upper_len")  # Fixed length from base joint to hip joint
+		self.thigh_len = private_settings.get("thigh_len")  # Thigh length
+		self.shank_len = private_settings.get("shank_len")  # Shank length
 
 		# Pre-calculate squared lengths if needed
 		self.thigh_len_squared = self.thigh_len ** 2
 		self.shank_len_squared = self.shank_len ** 2
 
 		# Joint angle limits (in degrees)
-		self.base_min_angle = -90
-		self.base_max_angle = 90
+		self.base_min_angle = default_settings.get("base_min_angle") + private_settings.get("base_offset")
+		self.base_max_angle = default_settings.get("base_max_angle") + private_settings.get("base_offset")
 
-		self.hip_min_angle = -90
-		self.hip_max_angle = 90
+		self.hip_min_angle = default_settings.get("hip_min_angle") + private_settings.get("hip_offset")
+		self.hip_max_angle = default_settings.get("hip_max_angle") + private_settings.get("hip_offset")
 
-		self.knee_min_angle = -90
-		self.knee_max_angle = 90
+		self.knee_min_angle = default_settings.get("knee_min_angle") + private_settings.get("knee_offset")
+		self.knee_max_angle = default_settings.get("knee_max_angle") + private_settings.get("knee_offset")
 
-		# Current joint angles (in degrees)
 		self.base_angle = 0
 		self.hip_angle = 0
 		self.knee_angle = 0

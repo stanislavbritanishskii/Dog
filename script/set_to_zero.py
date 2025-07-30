@@ -2,7 +2,7 @@ import board
 import busio
 from adafruit_pca9685 import PCA9685
 import time
-from dog4 import *
+from dog import *
 from trajectory_planning import *
 
 # Initialize I2C bus using the Pi's default SCL and SDA pins
