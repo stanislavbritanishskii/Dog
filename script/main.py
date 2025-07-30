@@ -13,7 +13,8 @@ pca = PCA9685(i2c)
 # pca = PCA9685()
 pca.frequency = 50  # Set frequency to 50Hz for servo control
 
-leg1 = Leg(pca.channels[13], pca.channels[14], pca.channels[15])
+front_right = Leg(pca.channels[13], pca.channels[14], pca.channels[15], right=True)
+front_left = Leg(pca.channels[10], pca.channels[11], pca.channels[12], right=False)
 
 
 # x, y, z - are the main coordinates. x -> left/right,
@@ -21,12 +22,12 @@ leg1 = Leg(pca.channels[13], pca.channels[14], pca.channels[15])
 # z -> up/down
 # i is a magical coordinate just to increase length of path and number of steps at some intervals
 reference_points = [
-	[-10, 0, -80, 0],
+	[0, 0, -80, 0],
 	# [0, 0, -189],
-	[-10, 20, -120, 0],
-	[-10, -30, -120, 100],
-	[-10, -45, -120, 0],
-	[-10, 0, -80, 0]
+	[0, 20, -120, 0],
+	[0, -30, -120, 100],
+	[0, -45, -120, 0],
+	[0, 0, -80, 0]
 ]
 
 
@@ -58,19 +59,26 @@ desired_positions = interpolate_path(reference_points, 3)
 
 
 pos = 0
-pos_update_time = 0.01
+pos_update_time = 0.03
 last_pos_update_time = time.time()
+offset = len(desired_positions) // 4
 while True:
-	# leg1.base_angle = 0
-	# leg1.hip_angle = -0
-	# leg1.knee_angle = -0
-	# leg1.set_angles()
-	# continue
+
 	if time.time() - last_pos_update_time > pos_update_time:
 		last_pos_update_time = time.time()
 		pos += 1
+		other_pos = pos + offset
 		if pos >= len(desired_positions):
 			pos = 0
-		leg1.go_to_position(*desired_positions[pos])
+		if other_pos >= len(desired_positions):
+			other_pos -= len(desired_positions)
 
-		leg1.set_angles()
+		position = desired_positions[pos]
+		position[0] -= 5
+		front_left.go_to_position(*position)
+		front_left.set_angles()
+
+		position = desired_positions[other_pos]
+		position[0] += 5
+		front_right.go_to_position(*position)
+		front_right.set_angles()

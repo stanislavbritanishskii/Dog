@@ -52,10 +52,11 @@ def angle_to_pulse(angle, min_angle, max_angle):
 
 
 class Leg:
-	def __init__(self, base_channel, hip_channel, knee_channel):
+	def __init__(self, base_channel, hip_channel, knee_channel, right=False):
 		self.base_channel = base_channel
 		self.hip_channel = hip_channel
 		self.knee_channel = knee_channel
+		self.right = right
 
 		# Segment lengths (in mm or your unit)
 		self.upper_len = 38  # Fixed length from base joint to hip joint
@@ -105,8 +106,11 @@ class Leg:
 		# print("knee angle: ", math.degrees(knee_angle))
 
 		self.base_angle = math.degrees(base_angle)
-		self.hip_angle = math.degrees(hip_angle)
+		self.hip_angle = -math.degrees(hip_angle)
 		self.knee_angle = -math.degrees(knee_angle)
+		if self.right:
+			self.hip_angle *= -1
+			self.knee_angle *= -1
 
 	def set_angles(self):
 		# Update the servo channels based on computed duty cycles.
