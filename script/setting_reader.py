@@ -9,3 +9,10 @@ def read_settings(settings_file):
 	rear_left = settings.get('rear_left')
 	rear_right = settings.get('rear_right')
 	return settings, default, front_left, front_right, rear_left, rear_right
+
+
+if __name__ == '__main__':
+	settings_file = 'settings.json'
+	settings = read_settings(settings_file)
+	for s in settings:
+		print(s)

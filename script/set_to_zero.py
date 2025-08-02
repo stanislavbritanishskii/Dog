@@ -4,6 +4,7 @@ from adafruit_pca9685 import PCA9685
 import time
 from dog import *
 from trajectory_planning import *
+from setting_reader import *
 
 # Initialize I2C bus using the Pi's default SCL and SDA pins
 i2c = busio.I2C(3, 2)
@@ -12,16 +13,15 @@ i2c = busio.I2C(3, 2)
 pca = PCA9685(i2c)
 # pca = PCA9685()
 pca.frequency = 50  # Set frequency to 50Hz for servo control
+settings, default, front_left_s, front_right_s, rear_left_s, rear_right_s = read_settings("settings.json")
 
-leg1 = Leg(pca.channels[13], pca.channels[14], pca.channels[15])
-leg2 = Leg(pca.channels[10], pca.channels[11], pca.channels[12])
-leg3 = Leg(pca.channels[7], pca.channels[8], pca.channels[9])
-leg4 = Leg(pca.channels[4], pca.channels[5], pca.channels[6])
-legs = []
+front_left = Leg(pca, default, front_left_s)
+front_right = Leg(pca, default, front_right_s)
+rear_left = Leg(pca, default, rear_left_s)
+rear_right = Leg(pca, default, rear_right_s)
 
-for i in range(4,14,3):
-	print(i, i+1, i+2)
-	legs.append(Leg(pca.channels[i], pca.channels[i+1], pca.channels[i+2]))
+
+legs = [front_left, front_right, rear_left, rear_right]
 
 
 while True:
@@ -30,4 +30,3 @@ while True:
 		leg.hip_angle = 0
 		leg.knee_angle = 0
 		leg.set_angles()
-

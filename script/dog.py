@@ -1,5 +1,7 @@
 import math
 
+from numpy.f2py.crackfortran import privatepattern
+
 
 def is_zero(val: float) -> bool:
 	if 0.01 > val > -0.01:
@@ -52,10 +54,10 @@ def angle_to_pulse(angle, min_angle, max_angle):
 
 
 class Leg:
-	def __init__(self, base_channel, hip_channel, knee_channel, default_settings:dict, private_settings:dict):
-		self.base_channel = base_channel
-		self.hip_channel = hip_channel
-		self.knee_channel = knee_channel
+	def __init__(self, pca, default_settings:dict, private_settings:dict):
+		self.base_channel = pca.channels[private_settings.get("base_channel")]
+		self.hip_channel = pca.channels[private_settings.get("hip_channel")]
+		self.knee_channel = pca.channels[private_settings.get("knee_channel")]
 		self.default_settings = default_settings
 		self.private_settings = private_settings
 
@@ -95,6 +97,7 @@ class Leg:
 		# print(upper_coord)
 		# print("distance to desired", (upper_coord - c).length())
 		left_distance = (upper_coord - c).length()
+		print(left_distance, self.thigh_len, self.shank_len)
 		knee_angle = math.pi - math.acos((self.thigh_len **2 + self.shank_len **2 - left_distance ** 2) / (2 * self.thigh_len * self.shank_len))
 
 		top_vector = [upper_coord.x, upper_coord.y, upper_coord.z]
@@ -106,11 +109,12 @@ class Leg:
 		# print("knee angle: ", math.degrees(knee_angle))
 
 		self.base_angle = math.degrees(base_angle)
-		self.hip_angle = -math.degrees(hip_angle)
-		self.knee_angle = -math.degrees(knee_angle)
-		if self.right:
-			self.hip_angle *= -1
-			self.knee_angle *= -1
+		self.hip_angle = math.degrees(hip_angle)
+		self.knee_angle = math.degrees(knee_angle)
+		self.base_angle *= self.private_settings.get("base")
+		self.hip_angle *= self.private_settings.get("hip")
+		self.knee_angle *= self.private_settings.get("knee")
+
 
 	def set_angles(self):
 		# Update the servo channels based on computed duty cycles.
