@@ -30,7 +30,7 @@
     "knee": 1,
     "base_offset": 10,
     "hip_offset": -3,
-    "knee_offset": 4,
+    "knee_offset": -3,
     "upper_len": 45,
     "thigh_len": 21,
     "shank_len": 56
@@ -58,7 +58,7 @@
     "knee": 1,
     "base_offset": -3,
     "hip_offset": 2,
-    "knee_offset": 4,
+    "knee_offset": 6,
     "upper_len": 45,
     "thigh_len": 21,
     "shank_len": 56

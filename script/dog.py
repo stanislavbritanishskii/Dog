@@ -3,6 +3,10 @@ import math
 from numpy.f2py.crackfortran import privatepattern
 
 
+def bound(val, lower_limit, upper_limit):
+	return min(max(val, lower_limit), upper_limit)
+
+
 def is_zero(val: float) -> bool:
 	if 0.01 > val > -0.01:
 		return True
@@ -97,14 +101,14 @@ class Leg:
 		# print(upper_coord)
 		# print("distance to desired", (upper_coord - c).length())
 		left_distance = (upper_coord - c).length()
-		print(left_distance, self.thigh_len, self.shank_len)
-		knee_angle = math.pi - math.acos((self.thigh_len **2 + self.shank_len **2 - left_distance ** 2) / (2 * self.thigh_len * self.shank_len))
+		# print(left_distance, self.thigh_len, self.shank_len)
+		knee_angle = math.pi - math.acos(bound((self.thigh_len **2 + self.shank_len **2 - left_distance ** 2) / (2 * self.thigh_len * self.shank_len), -1, 1))
 
 		top_vector = [upper_coord.x, upper_coord.y, upper_coord.z]
 		bottom_vector = [upper_coord.x - x, upper_coord.y - y, upper_coord.z - z]
 		inter_angle = math.copysign(math.pi - angle_between_vectors(top_vector, bottom_vector), y)
 		# print("inter_angle;", math.degrees(inter_angle))
-		hip_angle = math.acos((self.thigh_len **2 - self.shank_len **2 + left_distance ** 2) / (2 * self.thigh_len * left_distance)) + inter_angle
+		hip_angle = math.acos(bound((self.thigh_len **2 - self.shank_len **2 + left_distance ** 2) / (2 * self.thigh_len * left_distance), -1, 1)) + inter_angle
 		# print("hip angle: ",math.degrees(hip_angle))
 		# print("knee angle: ", math.degrees(knee_angle))
 
@@ -117,20 +121,21 @@ class Leg:
 
 
 	def set_angles(self):
-		# Update the servo channels based on computed duty cycles.
-		print("Setting angles: Base:", self.base_angle,
-			  "Hip:", self.hip_angle,
-			  "Knee:", self.knee_angle)
+		# 	Update the servo channels based on computed duty cycles.
+		# print("Setting angles: Base:", self.base_angle,
+		# 	  "Hip:", self.hip_angle,
+		# 	  "Knee:", self.knee_angle)
 		self.base_channel.duty_cycle = angle_to_pulse(self.base_angle, self.base_min_angle, self.base_max_angle)
 		self.hip_channel.duty_cycle = angle_to_pulse(self.hip_angle, self.hip_min_angle, self.hip_max_angle)
 		self.knee_channel.duty_cycle = angle_to_pulse(self.knee_angle, self.knee_min_angle, self.knee_max_angle)
 
 
 if __name__ == "__main__":
-	leg = Leg(1, 2, 3)
-
-	leg.hip_angle = 0
-	leg.knee_angle = 0
-	leg.knee_min_angle = 0
-	leg.set_angles()
+	pass
+	# leg = Leg(1, 2, 3)
+	#
+	# leg.hip_angle = 0
+	# leg.knee_angle = 0
+	# leg.knee_min_angle = 0
+	# leg.set_angles()
 

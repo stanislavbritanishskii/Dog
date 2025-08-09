@@ -6,6 +6,7 @@ from dog import *
 from trajectory_planning import *
 from setting_reader import *
 from controller import *
+from udp_listener import *
 # Initialize I2C bus using the Pi's default SCL and SDA pins
 i2c = busio.I2C(3, 2)
 
@@ -24,22 +25,6 @@ rear_right = Leg(pca, default, rear_right_s)
 
 controller = Controller()
 
-# x, y, z - are the main coordinates. x -> left/right,
-# y -> front/back
-# z -> up/down
-# i is a magical coordinate just to increase length of path and number of steps at some intervals
-reference_points = [
-	[0, 0, -0.9, 0],
-	# [0, 0, -189],
-	[0, 10, -1.10, 20],
-	[0, -25, -1.10, 200],
-	[0, -30, -1.10, 20],
-	[0, 0, -0.90, 0]
-]
-
-
-desired_positions = interpolate_path(reference_points, 3)
-
 # desired_positions = [[0, -0, -150]]
 
 
@@ -49,13 +34,25 @@ front_left_pos = 0
 pos_update_time = 0.01
 
 last_pos_update_time = time.time()
-offset = len(desired_positions) // 4
-controller.set_speeds(0, 0, 0, 2)
-controller.height_top = -70
-controller.height_bottom = -120
-while True:
+controller.set_speeds(-40, 0, 0, 1)
+controller.height_top = -80
+controller.height_bottom = -110
 
-	if time.time() - last_pos_update_time > pos_update_time:
+listener = UDPControlListener("0.0.0.0", 9998)
+listener.start()
+control_data = ControlData()
+
+
+def handle_exit(signum, frame):
+	print("\nStopping listener and cleaning up...")
+	listener.stop()
+
+
+while True:
+	control_data = listener.get_last_received_data()
+	print(control_data.forward, control_data.right)
+	controller.set_speeds(control_data.forward, control_data.right, control_data.rotation, control_data.step_count)
+	if time.time() - last_pos_update_time > control_data.delay_ms / 1000:
 		controller.next_point()
 		positions = controller.get_positions()
 		front_left.go_to_position(*positions[0])
@@ -67,29 +64,3 @@ while True:
 		front_right.set_angles()
 		rear_left.set_angles()
 		rear_right.set_angles()
-		# front_left_pos += 1
-		# if front_left_pos < 0:
-		# 	front_left_pos += len(desired_positions)
-		# front_right_pos = front_left_pos + 1 * offset
-		# rear_left_pos = front_left_pos + 2 * offset
-		# rear_right_pos = front_left_pos + 3 * offset
-		# if front_left_pos >= len(desired_positions):
-		# 	front_left_pos = 0
-		# if front_right_pos >= len(desired_positions):
-		# 	front_right_pos -= len(desired_positions)
-		# if rear_left_pos >= len(desired_positions):
-		# 	rear_left_pos -= len(desired_positions)
-		# if rear_right_pos >= len(desired_positions):
-		# 	rear_right_pos -= len(desired_positions)
-		#
-		# front_left.go_to_position(*desired_positions[front_left_pos])
-		# front_left.set_angles()
-		#
-		# front_right.go_to_position(*desired_positions[front_right_pos])
-		# front_right.set_angles()
-		#
-		# rear_left.go_to_position(*desired_positions[rear_left_pos])
-		# rear_left.set_angles()
-		#
-		# rear_right.go_to_position(*desired_positions[rear_right_pos])
-		# rear_right.set_angles()
