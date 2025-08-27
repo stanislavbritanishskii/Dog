@@ -34,9 +34,9 @@ front_left_pos = 0
 pos_update_time = 0.01
 
 last_pos_update_time = time.time()
-controller.set_speeds(-40, 0, 0, 1)
-controller.height_top = -80
-controller.height_bottom = -110
+controller.set_speeds(0, 0, 0, 1)
+controller.height_top = -65
+controller.height_bottom = -75
 
 listener = UDPControlListener("0.0.0.0", 9998)
 listener.start()
@@ -47,7 +47,7 @@ def handle_exit(signum, frame):
 	print("\nStopping listener and cleaning up...")
 	listener.stop()
 
-
+controller.trot = True
 while True:
 	control_data = listener.get_last_received_data()
 	print(control_data.forward, control_data.right)
@@ -55,6 +55,7 @@ while True:
 	if time.time() - last_pos_update_time > control_data.delay_ms / 1000:
 		controller.next_point()
 		positions = controller.get_positions()
+		print(positions)
 		front_left.go_to_position(*positions[0])
 		front_right.go_to_position(*positions[1])
 		rear_left.go_to_position(*positions[2])

@@ -12,6 +12,7 @@ def is_zero(val: float) -> bool:
 		return True
 	return False
 
+
 class Coordinate:
 	def __init__(self, x: float, y: float, z: float):
 		self.x = x
@@ -28,11 +29,10 @@ class Coordinate:
 		return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
 
 
-
 def angle_between_vectors(a, b):
-	dot = a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
-	norm_a = math.sqrt(a[0]**2 + a[1]**2 + a[2]**2)
-	norm_b = math.sqrt(b[0]**2 + b[1]**2 + b[2]**2)
+	dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+	norm_a = math.sqrt(a[0] ** 2 + a[1] ** 2 + a[2] ** 2)
+	norm_b = math.sqrt(b[0] ** 2 + b[1] ** 2 + b[2] ** 2)
 
 	if norm_a == 0.0 or norm_b == 0.0:
 		raise ValueError("One of the vectors is zero-length.")
@@ -58,7 +58,7 @@ def angle_to_pulse(angle, min_angle, max_angle):
 
 
 class Leg:
-	def __init__(self, pca, default_settings:dict, private_settings:dict):
+	def __init__(self, pca, default_settings: dict, private_settings: dict):
 		self.base_channel = pca.channels[private_settings.get("base_channel")]
 		self.hip_channel = pca.channels[private_settings.get("hip_channel")]
 		self.knee_channel = pca.channels[private_settings.get("knee_channel")]
@@ -88,6 +88,18 @@ class Leg:
 		self.hip_angle = 0
 		self.knee_angle = 0
 
+	def reset_angles(self, default_settings: dict, private_settings: dict):
+
+		# Joint angle limits (in degrees)
+		self.base_min_angle = default_settings.get("base_min_angle") + private_settings.get("base_offset")
+		self.base_max_angle = default_settings.get("base_max_angle") + private_settings.get("base_offset")
+
+		self.hip_min_angle = default_settings.get("hip_min_angle") + private_settings.get("hip_offset")
+		self.hip_max_angle = default_settings.get("hip_max_angle") + private_settings.get("hip_offset")
+
+		self.knee_min_angle = default_settings.get("knee_min_angle") + private_settings.get("knee_offset")
+		self.knee_max_angle = default_settings.get("knee_max_angle") + private_settings.get("knee_offset")
+
 	def go_to_position(self, x, y, z):
 		c = Coordinate(x, y, z)
 		if z or x:
@@ -95,20 +107,24 @@ class Leg:
 		else:
 			base_angle = 0
 		self.base_angle = math.degrees(base_angle)
-		upper_coord = Coordinate(0,0,0)
+		upper_coord = Coordinate(0, 0, 0)
 		upper_coord.x = self.upper_len * math.sin(base_angle)
 		upper_coord.z = -self.upper_len * math.cos(base_angle)
 		# print(upper_coord)
 		# print("distance to desired", (upper_coord - c).length())
 		left_distance = (upper_coord - c).length()
 		# print(left_distance, self.thigh_len, self.shank_len)
-		knee_angle = math.pi - math.acos(bound((self.thigh_len **2 + self.shank_len **2 - left_distance ** 2) / (2 * self.thigh_len * self.shank_len), -1, 1))
+		knee_angle = math.pi - math.acos(bound(
+			(self.thigh_len ** 2 + self.shank_len ** 2 - left_distance ** 2) / (2 * self.thigh_len * self.shank_len),
+			-1, 1))
 
 		top_vector = [upper_coord.x, upper_coord.y, upper_coord.z]
 		bottom_vector = [upper_coord.x - x, upper_coord.y - y, upper_coord.z - z]
 		inter_angle = math.copysign(math.pi - angle_between_vectors(top_vector, bottom_vector), y)
 		# print("inter_angle;", math.degrees(inter_angle))
-		hip_angle = math.acos(bound((self.thigh_len **2 - self.shank_len **2 + left_distance ** 2) / (2 * self.thigh_len * left_distance), -1, 1)) + inter_angle
+		hip_angle = math.acos(bound(
+			(self.thigh_len ** 2 - self.shank_len ** 2 + left_distance ** 2) / (2 * self.thigh_len * left_distance), -1,
+			1)) + inter_angle
 		# print("hip angle: ",math.degrees(hip_angle))
 		# print("knee angle: ", math.degrees(knee_angle))
 
@@ -118,7 +134,6 @@ class Leg:
 		self.base_angle *= self.private_settings.get("base")
 		self.hip_angle *= self.private_settings.get("hip")
 		self.knee_angle *= self.private_settings.get("knee")
-
 
 	def set_angles(self):
 		# 	Update the servo channels based on computed duty cycles.
@@ -132,10 +147,9 @@ class Leg:
 
 if __name__ == "__main__":
 	pass
-	# leg = Leg(1, 2, 3)
-	#
-	# leg.hip_angle = 0
-	# leg.knee_angle = 0
-	# leg.knee_min_angle = 0
-	# leg.set_angles()
-
+# leg = Leg(1, 2, 3)
+#
+# leg.hip_angle = 0
+# leg.knee_angle = 0
+# leg.knee_min_angle = 0
+# leg.set_angles()

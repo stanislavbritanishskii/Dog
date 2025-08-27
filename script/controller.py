@@ -21,8 +21,10 @@ class Controller:
 		self.right_speed = 0
 		self.rotation_speed = 0
 		self.steps = 1
-		self.height_top = -90
-		self.height_bottom = -110
+		self.height_top = -50
+		self.height_bottom = -60
+		self.trot = True
+		self.stabilise_sideways = 10
 		hx = 1
 		hy = 1
 		self.leg_base = {
@@ -54,17 +56,22 @@ class Controller:
 			vy_r =  self.rotation_speed * ry * ly
 
 			# combine
-			vx = vx_t + vx_r
+			vx = vx_t + vx_r + self.stabilise_sideways * ry
 			vy = vy_t + vy_r
 
 			# vertical lift
 			vz = lz * (self.height_top - self.height_bottom) + self.height_top
 			return [vx, vy, vz]
-
-		fl = compute_leg('front_left',  self.path[self.front_left_pos])
-		fr = compute_leg('front_right', self.path[self.front_right_pos])
-		rl = compute_leg('rear_left',   self.path[self.rear_left_pos])
-		rr = compute_leg('rear_right',  self.path[self.rear_right_pos])
+		if self.trot:
+			fl = compute_leg('front_left',  self.path[self.front_left_pos])
+			fr = compute_leg('front_right', self.path[self.rear_left_pos])
+			rl = compute_leg('rear_left',  self.path[self.rear_left_pos])
+			rr = compute_leg('rear_right', self.path[self.front_left_pos])
+		else:
+			fl = compute_leg('front_left',  self.path[self.front_left_pos])
+			fr = compute_leg('front_right', self.path[self.front_right_pos])
+			rl = compute_leg('rear_left',   self.path[self.rear_left_pos])
+			rr = compute_leg('rear_right',  self.path[self.rear_right_pos])
 		return [fl, fr, rl, rr]
 
 	def set_speeds(self, forward, right, rotation, steps=1):

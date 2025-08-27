@@ -25,7 +25,12 @@ legs = [front_left, front_right, rear_left, rear_right]
 
 
 while True:
-	# time.sleep(0.01)
+	time.sleep(0.5)
+	settings, default, front_left_s, front_right_s, rear_left_s, rear_right_s = read_settings("settings.json")
+	front_left.reset_angles(default, front_left_s)
+	front_right.reset_angles(default, front_right_s)
+	rear_left.reset_angles(default, rear_left_s)
+	rear_right.reset_angles(default, rear_right_s)
 	for leg in legs:
 		leg.base_angle = 0
 		leg.hip_angle = 0
