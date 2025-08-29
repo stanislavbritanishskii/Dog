@@ -117,14 +117,14 @@ class Leg:
 		knee_angle = math.pi - math.acos(bound(
 			(self.thigh_len ** 2 + self.shank_len ** 2 - left_distance ** 2) / (2 * self.thigh_len * self.shank_len),
 			-1, 1))
-
+		knee_angle *= -1
 		top_vector = [upper_coord.x, upper_coord.y, upper_coord.z]
 		bottom_vector = [upper_coord.x - x, upper_coord.y - y, upper_coord.z - z]
 		inter_angle = math.copysign(math.pi - angle_between_vectors(top_vector, bottom_vector), y)
 		# print("inter_angle;", math.degrees(inter_angle))
-		hip_angle = math.acos(bound(
+		hip_angle = - math.acos(bound(
 			(self.thigh_len ** 2 - self.shank_len ** 2 + left_distance ** 2) / (2 * self.thigh_len * left_distance), -1,
-			1)) + inter_angle
+			1)) +  inter_angle
 		# print("hip angle: ",math.degrees(hip_angle))
 		# print("knee angle: ", math.degrees(knee_angle))
 
@@ -146,10 +146,20 @@ class Leg:
 
 
 if __name__ == "__main__":
-	pass
-# leg = Leg(1, 2, 3)
-#
-# leg.hip_angle = 0
-# leg.knee_angle = 0
-# leg.knee_min_angle = 0
-# leg.set_angles()
+	# pass
+	class DummyChannel:
+		def __init__(self):
+			self.duty_cycle = 0
+
+	class DummyPca:
+		def __init__(self):
+			self.channels = []
+			for i in range(16):
+				self.channels.append(DummyChannel())
+	default_settings = {}
+	leg = Leg(DummyPca(), DummyPca(), DummyPca())
+
+	leg.hip_angle = 0
+	leg.knee_angle = 0
+	leg.knee_min_angle = 0
+	leg.set_angles()

@@ -11,6 +11,7 @@ class Controller:
 			[-1, -1, -1.2, 30],
 			[0, 0, -0, 0]
 		]
+
 		self.path = interpolate_path(reference_points, 1)
 		self.path_len = len(self.path)
 		self.front_left_pos = 0

@@ -50,12 +50,12 @@ def handle_exit(signum, frame):
 controller.trot = True
 while True:
 	control_data = listener.get_last_received_data()
-	print(control_data.forward, control_data.right)
+	# print(control_data.forward, control_data.right)
 	controller.set_speeds(control_data.forward, control_data.right, control_data.rotation, control_data.step_count)
 	if time.time() - last_pos_update_time > control_data.delay_ms / 1000:
 		controller.next_point()
 		positions = controller.get_positions()
-		print(positions)
+		# print(positions)
 		front_left.go_to_position(*positions[0])
 		front_right.go_to_position(*positions[1])
 		rear_left.go_to_position(*positions[2])

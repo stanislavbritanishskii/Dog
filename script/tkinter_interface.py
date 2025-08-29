@@ -17,10 +17,10 @@ DEADZONE = 0.05					# joystick deadzone (0..1), 0.05 = 5%
 # Joystick left: forward (from Y, inverted so Up=positive), right (from X)
 going_limit = 35
 FORWARD_MIN, FORWARD_MAX = -going_limit, going_limit
-RIGHT_MIN,   RIGHT_MAX   = -going_limit // 3, going_limit // 3
+RIGHT_MIN,   RIGHT_MAX   = -going_limit, going_limit
 
 # Joystick right: rotation (from X only)
-ROTATION_MIN, ROTATION_MAX = -5, 5
+ROTATION_MIN, ROTATION_MAX = -20, 20
 
 # ----- Sliders (int32) -----
 DELAY_MS_MIN, DELAY_MS_MAX = 0, 200
