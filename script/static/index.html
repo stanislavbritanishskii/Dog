@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Joystick Stream Control</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<style>
+		body {
+			margin: 0;
+			background: black;
+			overflow: hidden;
+		}
+		#stream {
+			position: absolute;
+			top: 0; left: 0;
+			width: 100vw;
+			height: auto;
+			z-index: 0;
+		}
+		.joystick-container {
+			position: absolute;
+			width: 150px;
+			height: 150px;
+			background: rgba(255, 255, 255, 0.1);
+			border: 2px solid #fff3;
+			border-radius: 50%;
+			touch-action: none;
+			z-index: 10;
+		}
+		.joystick-thumb {
+			position: absolute;
+			width: 50px;
+			height: 50px;
+			background: #ffffff88;
+			border-radius: 50%;
+			top: 50%; left: 50%;
+			transform: translate(-50%, -50%);
+		}
+		#joy1 { left: 10%; bottom: 10%; }
+		#joy2 { right: 10%; bottom: 10%; }
+		#joy3 { left: 50%; bottom: 10%; transform: translateX(-50%); }
+	</style>
+</head>
+<body>
+	<img id="stream" src="/stream.mjpg">
+
+	<div id="joy1" class="joystick-container">
+		<div class="joystick-thumb"></div>
+	</div>
+	<div id="joy2" class="joystick-container">
+		<div class="joystick-thumb"></div>
+	</div>
+	<div id="joy3" class="joystick-container">
+		<div class="joystick-thumb"></div>
+	</div>
+
+<script>
+    document.documentElement.requestFullscreen()
+	const ws = new WebSocket("ws://" + location.hostname + ":8765");
+
+	const joysticks = {};
+	function setupJoystick(id) {
+		const container = document.getElementById(id);
+		const thumb = container.querySelector(".joystick-thumb");
+		let active = false;
+		let pos = {x: 0, y: 0};
+
+		const getOffset = (e) => {
+			let rect = container.getBoundingClientRect();
+			let x = (e.clientX || e.touches[0].clientX) - rect.left;
+			let y = (e.clientY || e.touches[0].clientY) - rect.top;
+			let dx = (x - rect.width/2) / (rect.width/2);
+			let dy = (y - rect.height/2) / (rect.height/2);
+			return {x: Math.max(-1, Math.min(1, dx)), y: Math.max(-1, Math.min(1, dy))};
+		};
+
+		const moveThumb = (pos) => {
+			thumb.style.left = 50 + pos.x * 40 + '%';
+			thumb.style.top = 50 + pos.y * 40 + '%';
+		};
+
+		const reset = () => {
+			pos = {x: 0, y: 0};
+			moveThumb(pos);
+		};
+
+		const update = (e) => {
+			if (!active) return;
+			pos = getOffset(e);
+			moveThumb(pos);
+		};
+
+		container.addEventListener("mousedown", () => active = true);
+		container.addEventListener("touchstart", () => active = true);
+		window.addEventListener("mouseup", () => { active = false; reset(); });
+		window.addEventListener("touchend", () => { active = false; reset(); });
+		window.addEventListener("mousemove", update);
+		window.addEventListener("touchmove", update, { passive: false });
+
+		joysticks[id] = () => pos;
+	}
+
+	setupJoystick("joy1");
+	setupJoystick("joy2");
+	setupJoystick("joy3");
+
+	// === Keyboard state for each joystick ===
+	let keyboardJoy1 = {x: 0, y: 0}; // WASD
+	let keyboardJoy2 = {x: 0, y: 0}; // Arrows
+	let keyboardJoy3 = {x: 0, y: 0}; // Numpad
+
+	document.addEventListener("keydown", e => {
+		switch (e.key) {
+			// Left joystick (WASD)
+			case "w": case "W": keyboardJoy1.y = -1; break;
+			case "s": case "S": keyboardJoy1.y = 1; break;
+			case "a": case "A": keyboardJoy1.x = -1; break;
+			case "d": case "D": keyboardJoy1.x = 1; break;
+
+			// Right joystick (Arrow keys)
+			case "ArrowUp": keyboardJoy2.y = -1; break;
+			case "ArrowDown": keyboardJoy2.y = 1; break;
+			case "ArrowLeft": keyboardJoy2.x = -1; break;
+			case "ArrowRight": keyboardJoy2.x = 1; break;
+
+			// Center joystick (Numpad)
+			case "8": keyboardJoy3.y = -1; break;
+			case "2": keyboardJoy3.y = 1; break;
+			case "4": keyboardJoy3.x = -1; break;
+			case "6": keyboardJoy3.x = 1; break;
+		}
+	});
+
+	document.addEventListener("keyup", e => {
+		switch (e.key) {
+			// Left joystick (WASD)
+			case "w": case "W": case "s": case "S": keyboardJoy1.y = 0; break;
+			case "a": case "A": case "d": case "D": keyboardJoy1.x = 0; break;
+
+			// Right joystick (Arrow keys)
+			case "ArrowUp": case "ArrowDown": keyboardJoy2.y = 0; break;
+			case "ArrowLeft": case "ArrowRight": keyboardJoy2.x = 0; break;
+
+			// Center joystick (Numpad)
+			case "8": case "2": keyboardJoy3.y = 0; break;
+			case "4": case "6": keyboardJoy3.x = 0; break;
+		}
+	});
+
+	// === Send joystick + keyboard states to server ===
+	setInterval(() => {
+		const data = {
+			joy1: keyboardJoy1.x || keyboardJoy1.y ? keyboardJoy1 : joysticks["joy1"](),
+			joy2: keyboardJoy2.x || keyboardJoy2.y ? keyboardJoy2 : joysticks["joy2"](),
+			joy3: keyboardJoy3.x || keyboardJoy3.y ? keyboardJoy3 : joysticks["joy3"]()
+		};
+		if (ws.readyState === WebSocket.OPEN)
+			ws.send(JSON.stringify(data));
+	}, 33); // ~30 fps
+</script>
+
+</body>
+</html>

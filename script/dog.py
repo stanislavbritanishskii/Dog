@@ -145,6 +145,53 @@ class Leg:
 		self.knee_channel.duty_cycle = angle_to_pulse(self.knee_angle, self.knee_min_angle, self.knee_max_angle)
 
 
+class Head:
+	def __init__(self, pca, settings):
+		self.vertical = pca.channels[settings.get("vertical_channel")]
+		self.horizontal = pca.channels[settings.get("horizontal_channel")]
+		self.vert_offset = settings.get("vertical_offset")
+		self.hor_offset = settings.get("horizontal_offset")
+		self.current_vert = self.vert_offset
+		self.current_hor = self.hor_offset
+		self.horizontal_min = settings.get("horizontal_min")
+		self.horizontal_max = settings.get("horizontal_max")
+		self.vertical_min = settings.get("vertical_min")
+		self.vertical_max = settings.get("vertical_max")
+		self.horizontal_hard_min = settings.get("horizontal_hard_min")
+		self.horizontal_hard_max = settings.get("horizontal_hard_max")
+		self.vertical_hard_min = settings.get("vertical_hard_min")
+		self.vertical_hard_max = settings.get("vertical_hard_max")
+		self.horizontal_sign = settings.get("horizontal")
+		self.vertical_sign = settings.get("vertical")
+
+		self.step = settings.get("step")
+
+	def reset_angles(self, settings):
+		self.vert_offset = settings.get("vertical_offset")
+		self.hor_offset = settings.get("horizontal_offset")
+		self.current_vert = self.vert_offset
+		self.current_hor = self.hor_offset
+		self.horizontal_min = settings.get("horizontal_min")
+		self.horizontal_max = settings.get("horizontal_max")
+		self.vertical_min = settings.get("vertical_min")
+		self.vertical_max = settings.get("vertical_max")
+		self.horizontal_hard_min = settings.get("horizontal_hard_min")
+		self.horizontal_hard_max = settings.get("horizontal_hard_max")
+		self.vertical_hard_min = settings.get("vertical_hard_min")
+		self.vertical_hard_max = settings.get("vertical_hard_max")
+
+
+	def move(self, right, up):
+		self.current_vert += self.step * up * self.vertical_sign
+		self.current_hor += self.step * right * self.horizontal_sign
+		self.current_vert = min(max(self.current_vert, self.vertical_min), self.vertical_max)
+		self.current_hor = min(max(self.current_hor, self.horizontal_min), self.horizontal_max)
+		# print(self.current_vert, self.current_hor)
+
+	def set_angles(self):
+		self.vertical.duty_cycle = angle_to_pulse(self.current_vert, self.vertical_hard_min, self.vertical_hard_max)
+		self.horizontal.duty_cycle = angle_to_pulse(self.current_hor, self.horizontal_hard_min, self.horizontal_hard_max)
+
 if __name__ == "__main__":
 	# pass
 	class DummyChannel:

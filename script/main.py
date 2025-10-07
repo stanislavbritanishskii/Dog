@@ -16,13 +16,13 @@ pca = PCA9685(i2c)
 pca.frequency = 50  # Set frequency to 50Hz for servo control
 
 
-settings, default, front_left_s, front_right_s, rear_left_s, rear_right_s = read_settings("settings.json")
+settings, default, front_left_s, front_right_s, rear_left_s, rear_right_s,general, head_s = read_settings("settings.json")
 
 front_left = Leg(pca, default, front_left_s)
 front_right = Leg(pca, default, front_right_s)
 rear_left = Leg(pca, default, rear_left_s)
 rear_right = Leg(pca, default, rear_right_s)
-
+head = Head(pca, head_s)
 controller = Controller()
 
 # desired_positions = [[0, -0, -150]]
