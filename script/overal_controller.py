@@ -33,8 +33,6 @@ class OveralController:
 
 		self.controller = Controller()
 
-
-
 		self.last_pos_update_time = time.time()
 		self.controller.set_speeds(0, 0, 0, 2)
 		self.controller.height_top = -65
@@ -45,8 +43,8 @@ class OveralController:
 		self.controller.set_speeds(forward * self.max_forward_speed, right * self.max_side_speed, rotation * self.max_rotation_speed, self.step_count)
 		self.head.move(head_right, head_up)
 		self.head.set_angles()
-		print(forward * self.max_forward_speed, right * self.max_side_speed, rotation * self.max_rotation_speed, self.step_count)
-		
+		# print(forward * self.max_forward_speed, right * self.max_side_speed, rotation * self.max_rotation_speed, self.step_count)
+
 		if time.time() - self.last_pos_update_time > self.pos_update_time / 1000:
 			self.controller.next_point()
 			positions = self.controller.get_positions()
