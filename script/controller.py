@@ -5,14 +5,16 @@ class Controller:
 	def __init__(self):
 		reference_points = [
 			[0, 0, 0, 0],
-			[1, 1, -1, 30],
+			[1, 1, -0.5, 30],
+			[1, 1, -1, 60],
 			[0, 0, -1, 200],
-			[-1, -1, -1, 35],
-			[-1, -1, -1.2, 30],
+			[-1, -1, -1, 60],
+			# [-1, -1, -1.2, 60],
+			[-1, -1, -0.5, 30],
 			[0, 0, -0, 0]
 		]
 
-		self.path = interpolate_path(reference_points, 1)
+		self.path = interpolate_path(reference_points, 2)
 		self.path_len = len(self.path)
 		self.front_left_pos = 0
 		self.front_right_pos = self.path_len // 4

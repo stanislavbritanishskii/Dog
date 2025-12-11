@@ -187,6 +187,7 @@ class Head:
 		self.current_vert = min(max(self.current_vert, self.vertical_min), self.vertical_max)
 		self.current_hor = min(max(self.current_hor, self.horizontal_min), self.horizontal_max)
 		# print(self.current_vert, self.current_hor)
+		self.set_angles()
 
 	def set_angles(self):
 		self.vertical.duty_cycle = angle_to_pulse(self.current_vert, self.vertical_hard_min, self.vertical_hard_max)

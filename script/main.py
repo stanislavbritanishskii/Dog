@@ -1,67 +1,176 @@
-import board
-import busio
-from adafruit_pca9685 import PCA9685
+#!/usr/bin/env python3
+
+import io
+import threading
 import time
-from dog import *
-from trajectory_planning import *
-from setting_reader import *
-from controller import *
-from udp_listener import *
-# Initialize I2C bus using the Pi's default SCL and SDA pins
-i2c = busio.I2C(3, 2)
+import logging
+import asyncio
+import socketserver
+from http import server
+import websockets
+from picamera2 import Picamera2
+from picamera2.encoders import JpegEncoder
+from picamera2.outputs import FileOutput
+import json
+import overal_controller
+from camera import *
 
-# Create the PCA9685 instance
-pca = PCA9685(i2c)
-# pca = PCA9685()
-pca.frequency = 50  # Set frequency to 50Hz for servo control
+# === Configuration ===
 
+FRAME_WIDTH = 640
+FRAME_HEIGHT = 480
+HTTP_PORT = 8000
+WS_PORT = 8765
 
-settings, default, front_left_s, front_right_s, rear_left_s, rear_right_s,general, head_s = read_settings("settings.json")
-
-front_left = Leg(pca, default, front_left_s)
-front_right = Leg(pca, default, front_right_s)
-rear_left = Leg(pca, default, rear_left_s)
-rear_right = Leg(pca, default, rear_right_s)
-head = Head(pca, head_s)
-controller = Controller()
-
-# desired_positions = [[0, -0, -150]]
-
-
-
-front_left_pos = 0
-
-pos_update_time = 0.01
-
-last_pos_update_time = time.time()
-controller.set_speeds(0, 0, 0, 1)
-controller.height_top = -65
-controller.height_bottom = -75
-
-listener = UDPControlListener("0.0.0.0", 9998)
-listener.start()
-control_data = ControlData()
+# === Shared joystick state ===
+joystick_state = {
+	"joy1": {"x": 0.0, "y": 0.0},
+	"joy2": {"x": 0.0, "y": 0.0},
+	"joy3": {"x": 0.0, "y": 0.0},
+	"keyboard": {"x": 0, "y": 0}
+}
+joystick_lock = threading.Lock()
 
 
-def handle_exit(signum, frame):
-	print("\nStopping listener and cleaning up...")
-	listener.stop()
+# === MJPEG output handler for streaming ===
+class StreamingOutput(io.BufferedIOBase):
+	def __init__(self):
+		self.raw_frame = None
+		self.frame = None
+		self.condition = threading.Condition()
+		self.lock = threading.Lock()
+		self.proc_thread = threading.Thread(target=self._process_loop, daemon=True)
+		self.proc_thread.start()
 
-controller.trot = True
-while True:
-	control_data = listener.get_last_received_data()
-	# print(control_data.forward, control_data.right)
-	controller.set_speeds(control_data.forward, control_data.right, control_data.rotation, control_data.step_count)
-	if time.time() - last_pos_update_time > control_data.delay_ms / 1000:
-		controller.next_point()
-		positions = controller.get_positions()
-		# print(positions)
-		front_left.go_to_position(*positions[0])
-		front_right.go_to_position(*positions[1])
-		rear_left.go_to_position(*positions[2])
-		rear_right.go_to_position(*positions[3])
-		last_pos_update_time = time.time()
-		front_left.set_angles()
-		front_right.set_angles()
-		rear_left.set_angles()
-		rear_right.set_angles()
+	def write(self, buf):
+		with self.lock:
+			self.raw_frame = buf  # overwrite old unprocessed frame
+		return len(buf)
+
+	def _process_loop(self):
+		while True:
+			with self.lock:
+				if self.raw_frame is None:
+					time.sleep(0.002)
+					continue
+				buf = self.raw_frame
+				self.raw_frame = None
+			try:
+				processed = process_image(buf)
+			except Exception as e:
+				logging.warning(f"Frame processing failed: {e}")
+				continue
+			with self.condition:
+				self.frame = processed
+				self.condition.notify_all()
+
+
+# === HTTP server for index.html and MJPEG ===
+class MJPEGHandler(server.BaseHTTPRequestHandler):
+	def do_GET(self):
+		if self.path in ('/', '/index.html'):
+			try:
+				with open("static/index.html", "rb") as f:
+					content = f.read()
+				self.send_response(200)
+				self.send_header('Content-Type', 'text/html')
+				self.send_header('Content-Length', len(content))
+				self.end_headers()
+				self.wfile.write(content)
+			except Exception as e:
+				self.send_error(500, f"Error loading index.html: {e}")
+		elif self.path == '/stream.mjpg':
+			self.send_response(200)
+			self.send_header('Content-Type', 'multipart/x-mixed-replace; boundary=FRAME')
+			self.end_headers()
+			try:
+				while True:
+					with output.condition:
+						output.condition.wait()
+						frame = output.frame
+					self.wfile.write(b'--FRAME\r\n')
+					self.send_header('Content-Type', 'image/jpeg')
+					self.send_header('Content-Length', len(frame))
+					self.end_headers()
+					self.wfile.write(frame)
+					self.wfile.write(b'\r\n')
+			except Exception as e:
+				logging.warning(f"Client disconnected: {e}")
+		else:
+			self.send_error(404)
+			self.end_headers()
+
+
+class ThreadedHTTPServer(socketserver.ThreadingMixIn, server.HTTPServer):
+	allow_reuse_address = True
+	daemon_threads = True
+
+
+# === WebSocket handler (receives joystick data) ===
+async def ws_handler(websocket):
+	try:
+		while True:
+			data = await websocket.recv()
+			update_joystick_state(data)
+	except Exception as e:
+		logging.warning(f"WebSocket closed: {e}")
+
+
+# === Update joystick values into shared dictionary ===
+def update_joystick_state(json_data):
+	try:
+		data = json.loads(json_data)
+		with joystick_lock:
+			joystick_state["joy1"] = data.get("joy1", {"x": 0, "y": 0})
+			joystick_state["joy2"] = data.get("joy2", {"x": 0, "y": 0})
+			joystick_state["joy3"] = data.get("joy3", {"x": 0, "y": 0})
+			joystick_state["keyboard"] = data.get("keyboard", {"x": 0, "y": 0})
+	except Exception as e:
+		logging.warning(f"Failed to parse joystick data: {e}")
+
+
+# === Dummy background thread that reacts to joystick input ===
+class DummyBackgroundThread(threading.Thread):
+	def __init__(self):
+		super().__init__(daemon=True)
+		self.Controller = overal_controller.OveralController()
+
+	def run(self):
+		while True:
+			# time.sleep(1.0 / 30.0)  # ~30Hz
+			with joystick_lock:
+				js = joystick_state.copy()
+			if (-js['joy1']['y'] or js['joy1']['x'] or js['joy2']['x']):
+				self.Controller.iterate(-js['joy1']['y'], js['joy1']['x'], js['joy2']['x'])
+			self.Controller.head.move(js['joy3']['x'], js['joy3']['y'])
+	# print(f"[Dummy] joy1: {js['joy1']} joy2: {js['joy2']} joy3: {js['joy3']} keyboard: {js['keyboard']}")
+
+
+# === Camera setup ===
+picam2 = Picamera2()
+picam2.configure(picam2.create_video_configuration(main={"size": (FRAME_WIDTH, FRAME_HEIGHT)}))
+output = StreamingOutput()
+picam2.start_recording(JpegEncoder(), FileOutput(output))
+
+# === HTTP server startup ===
+http_server = ThreadedHTTPServer(('', HTTP_PORT), MJPEGHandler)
+http_thread = threading.Thread(target=http_server.serve_forever, daemon=True)
+http_thread.start()
+print(f"[HTTP] MJPEG stream available at http://<this-ip>:{HTTP_PORT}")
+
+# === Background process startup ===
+dummy_thread = DummyBackgroundThread()
+dummy_thread.start()
+
+
+# === WebSocket server startup ===
+async def main_async():
+	print(f"[WebSocket] Listening on ws://<this-ip>:{WS_PORT}/ (no path restriction)")
+	async with websockets.serve(ws_handler, "", WS_PORT):
+		await asyncio.Future()  # keep alive
+
+
+try:
+	asyncio.run(main_async())
+finally:
+	picam2.stop_recording()
