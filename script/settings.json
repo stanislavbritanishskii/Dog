@@ -76,7 +76,7 @@
     "vertical_channel": 7,
     "horizontal_channel": 3,
     "vertical": -1,
-    "horizontal": 1,
+    "horizontal": -1,
     "vertical_offset": 0,
     "horizontal_offset": 0,
     "horizontal_min": -60,
